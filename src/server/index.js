@@ -14,12 +14,14 @@ app.use('/', express.static(path.join(__dirname, '../public')))
 
 // your API calls
 
-// example API call
-app.get('/apod', async (req, res) => {
+app.get('/manifest/:roverName', async (req, res) => {
     try {
-        let image = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${process.env.API_KEY}`)
+        let manifest = await fetch(`https://api.nasa.gov/mars-photos/api/v1/manifests/${req.params.roverName}?api_key=${process.env.API_KEY}`)
             .then(res => res.json())
-        res.send({ image })
+        // we want to return the manifest without the photo object array
+        delete manifest.photo_manifest.photos
+        console.log(manifest)
+        res.send(manifest)
     } catch (err) {
         console.log('error:', err);
     }
