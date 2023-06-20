@@ -73,7 +73,7 @@ const ImageOfTheDay = (apod) => {
 
     console.log(photodate.getDate() === today.getDate());
     if (!apod || apod.date === today.getDate() ) {
-        getImageOfTheDay(store)
+        getImageOfTheDay(store) // return value never used
     }
 
     // check if the photo of the day is actually type video!
@@ -99,7 +99,7 @@ const getImageOfTheDay = (state) => {
 
     fetch(`http://localhost:3000/apod`)
         .then(res => res.json())
-        .then(apod => updateStore(store, { apod }))
+        .then(apod => updateStore(store, { apod })) // side effect
 
     return data
 }
