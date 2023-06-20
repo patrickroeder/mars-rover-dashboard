@@ -1,80 +1,171 @@
 let store = {
-    user: { name: "Student" },
-    apod: '',
     rovers: ['Curiosity', 'Opportunity', 'Spirit'],
     manifest: ''
-}
+};
 
 // add our markup to the page
-const root = document.getElementById('root')
+const root = document.getElementById('root');
 
 const updateStore = (store, newState) => {
-    store = Object.assign(store, newState)
-    render(root, store)
-}
+    store = Object.assign(store, newState);
+    render(root, store);
+};
 
 const render = async (root, state) => {
-    root.innerHTML = App(state)
-}
+    root.innerHTML = App(state);
+    initNavbar();
+};
 
 
 // create content
 const App = (state) => {
-    let { rovers, apod, manifest } = state
+    let { rovers, manifest } = state;
 
     return `
-        <header></header>
-        <main>
-            ${Greeting(store.user.name)}
-            <section>
-                <h3>Put things on the page!</h3>
-                <p>Here is an example section.</p>
-                <p>
-                    One of the most popular websites at NASA is the Astronomy Picture of the Day. In fact, this website is one of
-                    the most popular websites across all federal agencies. It has the popular appeal of a Justin Bieber video.
-                    This endpoint structures the APOD imagery and associated metadata so that it can be repurposed for other
-                    applications. In addition, if the concept_tags parameter is set to True, then keywords derived from the image
-                    explanation are returned. These keywords could be used as auto-generated hashtags for twitter or instagram feeds;
-                    but generally help with discoverability of relevant imagery.
-                </p>
-            </section>
-            <section>
-                ${RoverManifest(manifest, 'Spirit')}
-            </section>
-        </main>
-        <footer></footer>
-    `
-}
+    <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
+        <div class="container is-max-widescreen">
+            <div class="navbar-brand">
+                <div class="navbar-item">
+                    <strong>Mars Rover Dashboard</strong>
+                </div>
+                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
+                    data-target="roverNavigation">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+
+            <div class="navbar-menu" id="roverNavigation">
+                ${RoverNavigation(rovers)}
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+        <div class="columns">
+        <div class="column" id="information">
+            ${RoverInformation(manifest, 'Curiosity')}
+        </div>
+        <div class="column is-three-quarters" id="gallery">
+            ${RoverGallery(manifest, 'Curiosity')}
+        </div>
+      </div>
+        </div>
+    </section>
+    
+    <footer class="footer">
+            ${Footer()}
+    </footer>
+    `;
+};
 
 // listening for load event because page should load before any JS is called
 window.addEventListener('load', () => {
-    render(root, store)
-})
+    render(root, store);
+});
+
+const initNavbar = () => {
+    /* Bulma.io Navbar JavaScript toggle
+    Source: https://bulma.io/documentation/components/navbar/#navbar-menu  */
+
+    // Get all "navbar-burger" elements
+    const navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0)
+    
+    // Add a click event on each of them
+    navbarBurgers.forEach( el => {
+        el.addEventListener('click', () => {
+    
+        // Get the target from the "data-target" attribute
+        const target = el.dataset.target
+        const $target = document.getElementById(target)
+    
+        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+        el.classList.toggle('is-active')
+        $target.classList.toggle('is-active')
+    
+        })
+    })
+}
 
 // ------------------------------------------------------  COMPONENTS
 
-// Pure function that renders conditional information -- THIS IS JUST AN EXAMPLE, you can delete it.
-const Greeting = (name) => {
-    if (name) {
-        return `
-            <h1>Welcome, ${name}!</h1>
-        `
-    }
+
+const RoverNavigation = (rovers) => {
 
     return `
-        <h1>Hello!</h1>
-    `
-}
+    <div class="navbar-start">
+        <a class="navbar-item">
+            ${rovers[0]}
+        </a>
 
-const RoverManifest = (manifest, rover) => {
+        <a class="navbar-item">
+            ${rovers[1]}
+        </a>
+
+        <a class="navbar-item">
+            ${rovers[2]}
+        </a>
+    </div>
+    `;
+};
+
+const RoverInformation = (manifest, rover) => {
     if (!manifest) {
-        getManifest(rover)
+        getManifest(rover);
     }
     return `
-    <p>${manifest[rover].photo_manifest.max_sol}</p>
-    <p>${manifest[rover].photo_manifest.total_photos}</p>
-    `
-} 
+        <h1 class="title">
+            ${manifest[rover].photo_manifest.name} &nbsp; <span class="tag is-primary is-medium">${manifest[rover].photo_manifest.status}</span>
+        </h1>
+        <div class="box">
+            <div>
+                <p class="heading">Launch date</p>
+                <p class="title">${manifest[rover].photo_manifest.launch_date}</p>
+            </div>
+        </div>
+        <div class="box">
+            <div>
+                <p class="heading">Landing Date</p>
+                <p class="title">${manifest[rover].photo_manifest.landing_date}</p>
+            </div>
+        </div>
+        <div class="box">
+            <div>
+                <p class="heading">Total Photos</p>
+                <p class="title">${manifest[rover].photo_manifest.total_photos}</p>
+            </div>
+        </div>
+        <div class="box">
+            <div>
+                <p class="heading">Last photo taken</p>
+                <p class="title">${manifest[rover].photo_manifest.max_sol}</p>
+            </div>
+        </div>
+    `;
+};
+
+const RoverGallery = (manifest, rover) => {
+    // TODO Placeholder
+    return `
+    <div class="columns is-multiline" id="gallery">
+        <div class="column is-one-third">
+            <figure class="image is-4by3">
+                <img src="https://bulma.io/images/placeholders/640x480.png">
+            </figure>
+            <span class="is-size-7">Taken on: 19.12.2022 19:45</span>
+        </div>
+    </div>
+    `;
+};
+
+const Footer = () => {
+    return `
+        <div class="container is-max-widescreen">
+            Student Project by Patrick Roeder
+        </div>`
+}
 
 // ------------------------------------------------------  API CALLS
 
@@ -83,9 +174,9 @@ const getManifest = (rover) => {
     fetch(`http://localhost:3000/manifest/${rover}`)
         .then(res => res.json())
         .then(manifest => {
-            let roverManifest = { [rover]: manifest }
-            updateStore(store, { manifest: roverManifest } )
-        })
+            let roverManifest = { [rover]: manifest };
+            updateStore(store, { manifest: roverManifest });
+        });
 
-    return data
-}
+    return data;
+};
