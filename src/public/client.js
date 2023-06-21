@@ -1,25 +1,29 @@
-let store = {
-    rovers: ['Curiosity', 'Opportunity', 'Spirit'],
+// immutable global data store
+
+let store = Immutable.Map({
+    rovers: Immutable.List(['Curiosity', 'Opportunity', 'Spirit']),
     manifest: ''
-};
+});
 
 // add our markup to the page
 const root = document.getElementById('root');
 
 const updateStore = (store, newState) => {
-    store = Object.assign(store, newState);
-    render(root, store);
+    const mergedStore = store.merge(newState);
+    render(root, mergedStore);
 };
 
 const render = async (root, state) => {
     root.innerHTML = App(state);
-    initNavbar();
+    initNavbar(); // refactor: to be called only once at initial render
 };
 
 
 // create content
 const App = (state) => {
-    let { rovers, manifest } = state;
+
+    let rovers = state.toJS().rovers;
+    let manifest = state.toJS().manifest;
 
     return `
     <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
@@ -71,22 +75,22 @@ const initNavbar = () => {
     Source: https://bulma.io/documentation/components/navbar/#navbar-menu  */
 
     // Get all "navbar-burger" elements
-    const navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0)
+    const navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
     
     // Add a click event on each of them
     navbarBurgers.forEach( el => {
         el.addEventListener('click', () => {
     
         // Get the target from the "data-target" attribute
-        const target = el.dataset.target
-        const $target = document.getElementById(target)
+        const targetAttr = el.dataset.target;
+        const target = document.getElementById(targetAttr);
     
         // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
         el.classList.toggle('is-active')
-        $target.classList.toggle('is-active')
+        target.classList.toggle('is-active')
     
-        })
-    })
+        });
+    });
 }
 
 // ------------------------------------------------------  COMPONENTS
@@ -164,7 +168,7 @@ const Footer = () => {
     return `
         <div class="container is-max-widescreen">
             Student Project by Patrick Roeder
-        </div>`
+        </div>`;
 }
 
 // ------------------------------------------------------  API CALLS
