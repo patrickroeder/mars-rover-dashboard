@@ -20,8 +20,8 @@ app.get('/manifest/:roverName', async (req, res) => {
             .then(res => res.json());
         // we want to return the manifest without the photo object array
         delete manifest.photo_manifest.photos
-        // console.log(manifest);
-        res.send(manifest);
+        console.log(manifest.photo_manifest);
+        res.send(manifest.photo_manifest);
     } catch (err) {
         console.log('error:', err);
     }
@@ -29,9 +29,10 @@ app.get('/manifest/:roverName', async (req, res) => {
 
 app.get('/photos/:roverName/:sol', async (req, res) => {
     try {
-        let photos = await fetch(`https://api.nasa.gov/mars-photos/api/v1/rovers/${req.params.roverName}/photos?sol=${req.params.sol}?api_key=${process.env.API_KEY}`)
+        let photos = await fetch(`https://api.nasa.gov/mars-photos/api/v1/rovers/${req.params.roverName}/photos?sol=${req.params.sol}&api_key=${process.env.API_KEY}`)
             .then(res => res.json());
-        res.send(photos);
+        // console.log(photos.photos);
+        res.send(photos.photos);
     } catch (err) {
         console.log('error:', err);
     }

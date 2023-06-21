@@ -4,6 +4,7 @@ let store = Immutable.Map({
     user: Immutable.Map({
         name: 'John'
     }),
+    currentRover: 'Opportunity',
     rovers: Immutable.List([
         Immutable.Map({
             name: 'Opportunity',
@@ -34,7 +35,7 @@ const updateStore = (store, newState) => {
 
 const render = async (root, state) => {
     root.innerHTML = App(state);
-    initNavbar(); // refactor: to be called only once at initial render
+    initNavbar(); // TODO refactor: to be called only once at initial render
 };
 
 
@@ -42,6 +43,9 @@ const render = async (root, state) => {
 const App = (state) => {
 
     let rovers = state.toJS().rovers;
+    let current = state.toJS().currentRover;
+    // console.log(current);
+    let currentIndex = getIndexbyName(rovers, current);
 
     return `
     <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
@@ -68,10 +72,10 @@ const App = (state) => {
         <div class="container is-max-widescreen">
         <div class="columns">
         <div class="column" id="information">
-            ${RoverInformation(rovers, rovers[0].manifest, rovers[0].name)}
+            ${RoverInformation(rovers, rovers[currentIndex].manifest, rovers[currentIndex].name)}
         </div>
         <div class="column is-three-quarters" id="gallery">
-           
+            ${RoverGallery(rovers, rovers[currentIndex].photos, rovers[currentIndex].name)}
         </div>
       </div>
         </div>
@@ -139,45 +143,51 @@ const RoverInformation = (rovers, manifest, rover) => {
     }
     return `
         <h1 class="title">
-            ${manifest.photo_manifest.name} &nbsp; <span class="tag is-primary is-medium">${manifest.photo_manifest.status}</span>
+            ${manifest.name} &nbsp; <span class="tag is-primary is-medium">${manifest.status}</span>
         </h1>
         <div class="box">
             <div>
                 <p class="heading">Launch date</p>
-                <p class="title">${manifest.photo_manifest.launch_date}</p>
+                <p class="title">${manifest.launch_date}</p>
             </div>
         </div>
         <div class="box">
             <div>
                 <p class="heading">Landing Date</p>
-                <p class="title">${manifest.photo_manifest.landing_date}</p>
+                <p class="title">${manifest.landing_date}</p>
             </div>
         </div>
         <div class="box">
             <div>
                 <p class="heading">Total Photos</p>
-                <p class="title">${manifest.photo_manifest.total_photos}</p>
+                <p class="title">${manifest.total_photos}</p>
             </div>
         </div>
         <div class="box">
             <div>
                 <p class="heading">Last photo taken</p>
-                <p class="title">${manifest.photo_manifest.max_sol}</p>
+                <p class="title">${manifest.max_sol}</p>
             </div>
         </div>
     `;
 };
 
-const RoverGallery = (manifest, rover) => {
-    // TODO Placeholder
+const RoverGallery = (rovers, photos, rover) => {
+    if (!photos) {
+        getPhotos(rovers, rover, rovers[getIndexbyName(rovers, rover)].manifest.max_sol - 20);
+    }
+    let photoItems = photos.map((photo) => {
+        return `<div class="column is-one-third">
+            <figure class="image is-4by3">
+                <img src="${photo.img_src}">
+            </figure>
+            <span class="is-size-7">Taken on: ${photo.earth_date}</span>
+        </div>`;
+    });
+
     return `
     <div class="columns is-multiline" id="gallery">
-        <div class="column is-one-third">
-            <figure class="image is-4by3">
-                <img src="https://bulma.io/images/placeholders/640x480.png">
-            </figure>
-            <span class="is-size-7">Taken on: 19.12.2022 19:45</span>
-        </div>
+        ${photoItems.join('')}
     </div>
     `;
 };
@@ -189,6 +199,13 @@ const Footer = () => {
         </div>`;
 }
 
+// Utilities
+
+const getIndexbyName = (array, name) => {
+    // TODO error handling for name not found (index = -1)
+    return array.findIndex(a => a.name === name);
+}
+
 // ------------------------------------------------------  API CALLS
 
 const getManifest = (rovers, rover) => {
@@ -197,11 +214,8 @@ const getManifest = (rovers, rover) => {
         .then(res => res.json())
         .then(manifest => {
             // find our rover and append manifest
-            let roverObj = rovers.find(r => r.name === rover);
-            roverObj.manifest = manifest;
-            // replace rover in rover array
-            const index = rovers.findIndex(r => r.name === rover);
-            rovers[index] = roverObj;
+            const index = getIndexbyName(rovers, rover);
+            rovers[index].manifest = manifest;
             // update store with new rover array
             updateStore(store, Immutable.fromJS({ rovers }));
         });
@@ -209,13 +223,16 @@ const getManifest = (rovers, rover) => {
     return data;
 };
 
-/* const getImages = (rover, sol) => {
+const getPhotos = (rovers, rover, sol) => {
     fetch(`http://localhost:3000/photos/${rover}/${sol}`)
         .then(res => res.json())
         .then(photos => {
-            let roverManifest = { [rover]: manifest };
-            updateStore(store, { manifest: roverManifest });
+            // find our rover and append manifest
+            const index = getIndexbyName(rovers, rover);
+            rovers[index].photos = photos;
+            // update store with new rover array
+            updateStore(store, Immutable.fromJS({ rovers }));
         });
 
     return data;
-} */
+}
