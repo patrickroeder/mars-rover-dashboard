@@ -1,8 +1,26 @@
 // immutable global data store
 
 let store = Immutable.Map({
-    rovers: Immutable.List(['Curiosity', 'Opportunity', 'Spirit']),
-    manifest: ''
+    user: Immutable.Map({
+        name: 'John'
+    }),
+    rovers: Immutable.List([
+        Immutable.Map({
+            name: 'Opportunity',
+            manifest: '',
+            photos: ''
+        }),
+        Immutable.Map({
+            name: 'Curiosity',
+            manifest: '',
+            photos: ''
+        }),
+        Immutable.Map({
+            name: 'Spirit',
+            manifest: '',
+            photos: ''
+        })
+    ])
 });
 
 // add our markup to the page
@@ -10,6 +28,7 @@ const root = document.getElementById('root');
 
 const updateStore = (store, newState) => {
     const mergedStore = store.merge(newState);
+    console.log(mergedStore.toJS());
     render(root, mergedStore);
 };
 
@@ -23,7 +42,6 @@ const render = async (root, state) => {
 const App = (state) => {
 
     let rovers = state.toJS().rovers;
-    let manifest = state.toJS().manifest;
 
     return `
     <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
@@ -50,10 +68,10 @@ const App = (state) => {
         <div class="container is-max-widescreen">
         <div class="columns">
         <div class="column" id="information">
-            ${RoverInformation(manifest, 'Curiosity')}
+            ${RoverInformation(rovers, rovers[0].manifest, rovers[0].name)}
         </div>
         <div class="column is-three-quarters" id="gallery">
-            ${RoverGallery(manifest, 'Curiosity')}
+           
         </div>
       </div>
         </div>
@@ -101,50 +119,50 @@ const RoverNavigation = (rovers) => {
     return `
     <div class="navbar-start">
         <a class="navbar-item">
-            ${rovers[0]}
+            ${rovers[0].name}
         </a>
 
         <a class="navbar-item">
-            ${rovers[1]}
+            ${rovers[1].name}
         </a>
 
         <a class="navbar-item">
-            ${rovers[2]}
+            ${rovers[2].name}
         </a>
     </div>
     `;
 };
 
-const RoverInformation = (manifest, rover) => {
+const RoverInformation = (rovers, manifest, rover) => {
     if (!manifest) {
-        getManifest(rover);
+        getManifest(rovers, rover);
     }
     return `
         <h1 class="title">
-            ${manifest[rover].photo_manifest.name} &nbsp; <span class="tag is-primary is-medium">${manifest[rover].photo_manifest.status}</span>
+            ${manifest.photo_manifest.name} &nbsp; <span class="tag is-primary is-medium">${manifest.photo_manifest.status}</span>
         </h1>
         <div class="box">
             <div>
                 <p class="heading">Launch date</p>
-                <p class="title">${manifest[rover].photo_manifest.launch_date}</p>
+                <p class="title">${manifest.photo_manifest.launch_date}</p>
             </div>
         </div>
         <div class="box">
             <div>
                 <p class="heading">Landing Date</p>
-                <p class="title">${manifest[rover].photo_manifest.landing_date}</p>
+                <p class="title">${manifest.photo_manifest.landing_date}</p>
             </div>
         </div>
         <div class="box">
             <div>
                 <p class="heading">Total Photos</p>
-                <p class="title">${manifest[rover].photo_manifest.total_photos}</p>
+                <p class="title">${manifest.photo_manifest.total_photos}</p>
             </div>
         </div>
         <div class="box">
             <div>
                 <p class="heading">Last photo taken</p>
-                <p class="title">${manifest[rover].photo_manifest.max_sol}</p>
+                <p class="title">${manifest.photo_manifest.max_sol}</p>
             </div>
         </div>
     `;
@@ -173,14 +191,31 @@ const Footer = () => {
 
 // ------------------------------------------------------  API CALLS
 
-const getManifest = (rover) => {
+const getManifest = (rovers, rover) => {
 
     fetch(`http://localhost:3000/manifest/${rover}`)
         .then(res => res.json())
         .then(manifest => {
+            // find our rover and append manifest
+            let roverObj = rovers.find(r => r.name === rover);
+            roverObj.manifest = manifest;
+            // replace rover in rover array
+            const index = rovers.findIndex(r => r.name === rover);
+            rovers[index] = roverObj;
+            // update store with new rover array
+            updateStore(store, Immutable.fromJS({ rovers }));
+        });
+
+    return data;
+};
+
+/* const getImages = (rover, sol) => {
+    fetch(`http://localhost:3000/photos/${rover}/${sol}`)
+        .then(res => res.json())
+        .then(photos => {
             let roverManifest = { [rover]: manifest };
             updateStore(store, { manifest: roverManifest });
         });
 
     return data;
-};
+} */
