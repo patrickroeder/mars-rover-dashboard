@@ -35,7 +35,8 @@ const updateStore = (store, newState) => {
 
 const render = async (root, state) => {
     root.innerHTML = App(state);
-    initNavbar(); // TODO refactor: to be called only once at initial render
+    initNavToggle(); // TODO rcefactor: to be called only once at initial render
+    initNav();
 };
 
 
@@ -62,9 +63,7 @@ const App = (state) => {
                 </a>
             </div>
 
-            <div class="navbar-menu" id="roverNavigation">
-                ${RoverNavigation(rovers)}
-            </div>
+            ${RoverNavigation(NavItems, rovers)}
         </div>
     </nav>
 
@@ -75,7 +74,7 @@ const App = (state) => {
             ${RoverInformation(rovers, rovers[currentIndex].manifest, rovers[currentIndex].name)}
         </div>
         <div class="column is-three-quarters" id="gallery">
-            ${RoverGallery(rovers, rovers[currentIndex].photos, rovers[currentIndex].name)}
+            ${RoverGallery(GalleryItems, rovers, rovers[currentIndex].photos, rovers[currentIndex].name)}
         </div>
       </div>
         </div>
@@ -92,7 +91,7 @@ window.addEventListener('load', () => {
     render(root, store);
 });
 
-const initNavbar = () => {
+const initNavToggle = () => {
     /* Bulma.io Navbar JavaScript toggle
     Source: https://bulma.io/documentation/components/navbar/#navbar-menu  */
 
@@ -115,27 +114,45 @@ const initNavbar = () => {
     });
 }
 
+const initNav = () => {
+    // Get the parent div element
+    const parentDiv = document.getElementById('roverNavigation');
+    // Get all the anchor tags inside the parent div and convert them into an array
+    const anchorTags = Array.from(parentDiv.getElementsByTagName('a'));
+    // Attach event listeners to each anchor tag using map()
+    anchorTags.map(anchor => {
+        anchor.addEventListener('click', function() {
+            // Event listener callback function
+            console.log('Anchor tag clicked:', this.textContent);
+        });
+    });
+}
+
+const navHandler = () => {
+
+}
+
 // ------------------------------------------------------  COMPONENTS
 
 
-const RoverNavigation = (rovers) => {
-
+const RoverNavigation = (itemsCallback, rovers) => {
     return `
-    <div class="navbar-start">
-        <a class="navbar-item">
-            ${rovers[0].name}
-        </a>
-
-        <a class="navbar-item">
-            ${rovers[1].name}
-        </a>
-
-        <a class="navbar-item">
-            ${rovers[2].name}
-        </a>
+    <div class="navbar-menu" id="roverNavigation">
+        <div class="navbar-start">
+            ${itemsCallback(rovers)}
+        </div>
     </div>
     `;
 };
+
+const NavItems = (rovers) => {
+    let navItems = rovers.map((rover) => {
+        return `<a class="navbar-item">
+            ${rover.name}
+        </a>`
+    });
+    return navItems.join('');
+}
 
 const RoverInformation = (rovers, manifest, rover) => {
     if (!manifest) {
@@ -166,31 +183,35 @@ const RoverInformation = (rovers, manifest, rover) => {
         <div class="box">
             <div>
                 <p class="heading">Last photo taken</p>
-                <p class="title">${manifest.max_sol}</p>
+                <p class="title">${manifest.max_date}</p>
             </div>
         </div>
     `;
 };
 
-const RoverGallery = (rovers, photos, rover) => {
+const RoverGallery = (itemsCallback, rovers, photos, rover) => {
     if (!photos) {
-        getPhotos(rovers, rover, rovers[getIndexbyName(rovers, rover)].manifest.max_sol - 20);
+        getPhotos(rovers, rover, rovers[getIndexbyName(rovers, rover)].manifest.max_sol);
     }
+
+    return `
+    <div class="columns is-multiline" id="gallery">
+        ${itemsCallback(photos)}
+    </div>
+    `;
+};
+
+const GalleryItems = (photos) => {
     let photoItems = photos.map((photo) => {
         return `<div class="column is-one-third">
             <figure class="image is-4by3">
                 <img src="${photo.img_src}">
             </figure>
-            <span class="is-size-7">Taken on: ${photo.earth_date}</span>
+            <span class="is-size-7">Taken on: ${photo.earth_date}</span> <span class="tag is-light">${photo.camera.name}</span>
         </div>`;
     });
-
-    return `
-    <div class="columns is-multiline" id="gallery">
-        ${photoItems.join('')}
-    </div>
-    `;
-};
+    return photoItems.join('');
+}
 
 const Footer = () => {
     return `
