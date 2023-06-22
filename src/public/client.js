@@ -27,12 +27,6 @@ let store = Immutable.Map({
 // add our markup to the page
 const root = document.getElementById('root');
 
-const updateStore = (store, key, newState) => {
-    store = store.set(key, newState);
-    console.log(store.toJS());
-    render(root, store);
-};
-
 const render = async (root, state) => {
     root.innerHTML = App(state);
     initNav();
@@ -41,10 +35,10 @@ const render = async (root, state) => {
 // create content
 const App = (state) => {
 
-    let rovers = state.toJS().rovers;
-    let current = state.toJS().currentRover;
-    console.log('Current Rover: '+ current);
-    let currentIndex = getIndexbyName(rovers, current);
+    let rovers = state.get('rovers');
+    let currentRover = state.get('currentRover');
+    let index = rovers.findIndex(r => r.get('name') === currentRover);
+    let rover = rovers.get(index);
 
     return `
     <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
@@ -69,10 +63,10 @@ const App = (state) => {
         <div class="container is-max-widescreen">
         <div class="columns">
         <div class="column" id="information">
-            ${RoverInformation(rovers, rovers[currentIndex].manifest, rovers[currentIndex].name)}
+            ${RoverInformation(rover)}
         </div>
         <div class="column is-three-quarters" id="gallery">
-            ${RoverGallery(GalleryItems, rovers, rovers[currentIndex].photos, rovers[currentIndex].name)}
+            ${RoverGallery(GalleryItems, rover)}
         </div>
       </div>
         </div>
@@ -122,15 +116,16 @@ const RoverNavigation = (itemsCallback, rovers) => {
 const NavItems = (rovers) => {
     let navItems = rovers.map((rover) => {
         return `<a class="navbar-item">
-            ${rover.name}
+            ${rover.toJS().name}
         </a>`
     });
     return navItems.join('');
 }
 
-const RoverInformation = (rovers, manifest, rover) => {
+const RoverInformation = (rover) => {
+    const manifest = rover.get('manifest');
     if (!manifest) {
-        getManifest(rovers, rover);
+        getManifest(rover);
     }
     return `
         <h1 class="title">
@@ -163,9 +158,12 @@ const RoverInformation = (rovers, manifest, rover) => {
     `;
 };
 
-const RoverGallery = (itemsCallback, rovers, photos, rover) => {
+const RoverGallery = (itemsCallback, rover) => {
+    const photos = rover.get('photos');
+    const manifest = rover.get('manifest');
+
     if (!photos) {
-        getPhotos(rovers, rover, rovers[getIndexbyName(rovers, rover)].manifest.max_sol);
+        getPhotos(rover, manifest.max_sol);
     }
 
     return `
@@ -203,18 +201,18 @@ const getIndexbyName = (array, name) => {
 
 // ------------------------------------------------------  API CALLS
 
-const getManifest = (rovers, rover) => {
+const getManifest = (rover) => {
 
-    fetch(`http://localhost:3000/manifest/${rover}`)
+    fetch(`http://localhost:3000/manifest/${rover.get('name')}`)
         .then(res => res.json())
         .then(manifest => {
             // find our rover and append manifest
-            console.log(`Get manifest for ${rover}`);
+            console.log(`Get manifest for ${rover.get('name')}`);
 
-            // TODO refactor: update store in a single place
-            // update store with new manifest
+            // TODO refactor
+            // update store with new photos
             const retrievedRovers = store.get('rovers');
-            const index = retrievedRovers.findIndex(r => r.get('name') === rover);
+            const index = retrievedRovers.findIndex(r => r.get('name') === rover.get('name'));
             const updatedRovers = retrievedRovers.setIn([index, 'manifest'], manifest);
             store = store.set('rovers', updatedRovers);
             console.log(store.toJS());
@@ -224,17 +222,17 @@ const getManifest = (rovers, rover) => {
     return data;
 };
 
-const getPhotos = (rovers, rover, sol) => {
-    fetch(`http://localhost:3000/photos/${rover}/${sol}`)
+const getPhotos = (rover, sol) => {
+    fetch(`http://localhost:3000/photos/${rover.get('name')}/${sol}`)
         .then(res => res.json())
         .then(photos => {
             // find our rover and append manifest
-            console.log(`Get photos for ${rover}`);
+            console.log(`Get photos for ${rover.get('name')}`);
 
             // TODO refactor
             // update store with new photos
             const retrievedRovers = store.get('rovers');
-            const index = retrievedRovers.findIndex(r => r.get('name') === rover);
+            const index = retrievedRovers.findIndex(r => r.get('name') === rover.get('name'));
             const updatedRovers = retrievedRovers.setIn([index, 'photos'], photos);
             store = store.set('rovers', updatedRovers);
             console.log(store.toJS());
