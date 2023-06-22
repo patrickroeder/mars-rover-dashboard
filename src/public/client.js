@@ -4,7 +4,7 @@ let store = Immutable.Map({
     user: Immutable.Map({
         name: 'John'
     }),
-    currentRover: 'Opportunity',
+    currentRover: 'Spirit',
     rovers: Immutable.List([
         Immutable.Map({
             name: 'Opportunity',
@@ -27,25 +27,23 @@ let store = Immutable.Map({
 // add our markup to the page
 const root = document.getElementById('root');
 
-const updateStore = (store, newState) => {
-    const mergedStore = store.merge(newState);
-    console.log(mergedStore.toJS());
-    render(root, mergedStore);
+const updateStore = (store, key, newState) => {
+    store = store.set(key, newState);
+    console.log(store.toJS());
+    render(root, store);
 };
 
 const render = async (root, state) => {
     root.innerHTML = App(state);
-    initNavToggle(); // TODO rcefactor: to be called only once at initial render
     initNav();
 };
-
 
 // create content
 const App = (state) => {
 
     let rovers = state.toJS().rovers;
     let current = state.toJS().currentRover;
-    // console.log(current);
+    console.log('Current Rover: '+ current);
     let currentIndex = getIndexbyName(rovers, current);
 
     return `
@@ -91,29 +89,6 @@ window.addEventListener('load', () => {
     render(root, store);
 });
 
-const initNavToggle = () => {
-    /* Bulma.io Navbar JavaScript toggle
-    Source: https://bulma.io/documentation/components/navbar/#navbar-menu  */
-
-    // Get all "navbar-burger" elements
-    const navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
-    
-    // Add a click event on each of them
-    navbarBurgers.forEach( el => {
-        el.addEventListener('click', () => {
-    
-        // Get the target from the "data-target" attribute
-        const targetAttr = el.dataset.target;
-        const target = document.getElementById(targetAttr);
-    
-        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
-        el.classList.toggle('is-active')
-        target.classList.toggle('is-active')
-    
-        });
-    });
-}
-
 const initNav = () => {
     // Get the parent div element
     const parentDiv = document.getElementById('roverNavigation');
@@ -122,14 +97,13 @@ const initNav = () => {
     // Attach event listeners to each anchor tag using map()
     anchorTags.map(anchor => {
         anchor.addEventListener('click', function() {
-            // Event listener callback function
-            console.log('Anchor tag clicked:', this.textContent);
+            const rover = this.textContent.trim();
+            console.log('Anchor tag clicked:', rover);
+            // update store
+            store = store.set('currentRover', rover);
+            render(root, store);
         });
     });
-}
-
-const navHandler = () => {
-
 }
 
 // ------------------------------------------------------  COMPONENTS
@@ -235,10 +209,16 @@ const getManifest = (rovers, rover) => {
         .then(res => res.json())
         .then(manifest => {
             // find our rover and append manifest
-            const index = getIndexbyName(rovers, rover);
-            rovers[index].manifest = manifest;
-            // update store with new rover array
-            updateStore(store, Immutable.fromJS({ rovers }));
+            console.log(`Get manifest for ${rover}`);
+
+            // TODO refactor: update store in a single place
+            // update store with new manifest
+            const retrievedRovers = store.get('rovers');
+            const index = retrievedRovers.findIndex(r => r.get('name') === rover);
+            const updatedRovers = retrievedRovers.setIn([index, 'manifest'], manifest);
+            store = store.set('rovers', updatedRovers);
+            console.log(store.toJS());
+            render(root, store);
         });
 
     return data;
@@ -249,10 +229,16 @@ const getPhotos = (rovers, rover, sol) => {
         .then(res => res.json())
         .then(photos => {
             // find our rover and append manifest
-            const index = getIndexbyName(rovers, rover);
-            rovers[index].photos = photos;
-            // update store with new rover array
-            updateStore(store, Immutable.fromJS({ rovers }));
+            console.log(`Get photos for ${rover}`);
+
+            // TODO refactor
+            // update store with new photos
+            const retrievedRovers = store.get('rovers');
+            const index = retrievedRovers.findIndex(r => r.get('name') === rover);
+            const updatedRovers = retrievedRovers.setIn([index, 'photos'], photos);
+            store = store.set('rovers', updatedRovers);
+            console.log(store.toJS());
+            render(root, store);
         });
 
     return data;

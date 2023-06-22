@@ -19,7 +19,7 @@ app.get('/manifest/:roverName', async (req, res) => {
         let manifest = await fetch(`https://api.nasa.gov/mars-photos/api/v1/manifests/${req.params.roverName}?api_key=${process.env.API_KEY}`)
             .then(res => res.json());
         // we want to return the manifest without the photo object array
-        delete manifest.photo_manifest.photos
+        delete manifest.photo_manifest.photos;
         console.log(manifest.photo_manifest);
         res.send(manifest.photo_manifest);
     } catch (err) {
