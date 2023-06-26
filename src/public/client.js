@@ -2,7 +2,7 @@
 
 let store = Immutable.Map({
     gallery: Immutable.Map({
-        min_photos: 9
+        min_photos: 20
     }),
     currentRover: 'Opportunity',
     rovers: Immutable.List([
@@ -46,12 +46,6 @@ const App = (state) => {
                 <div class="navbar-item">
                     <strong>Mars Rover Dashboard</strong>
                 </div>
-                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
-                    data-target="roverNavigation">
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                </a>
             </div>
 
             ${RoverNavigation(NavItems, rovers)}
@@ -113,7 +107,7 @@ const hideLoadingModal = (element) => {
 
 const RoverNavigation = (NavItems, rovers) => {
     return `
-    <div class="navbar-menu" id="roverNavigation">
+    <div class="navbar-menu is-active" id="roverNavigation">
         <div class="navbar-start">
             ${NavItems(rovers)}
         </div>
