@@ -1,25 +1,25 @@
 // immutable global data store
 
 let store = Immutable.Map({
-    user: Immutable.Map({
-        name: 'John'
+    gallery: Immutable.Map({
+        min_photos: 9
     }),
-    currentRover: 'Spirit',
+    currentRover: 'Curiosity',
     rovers: Immutable.List([
         Immutable.Map({
             name: 'Opportunity',
             manifest: '',
-            photos: ''
+            photos: Immutable.List([])
         }),
         Immutable.Map({
             name: 'Curiosity',
             manifest: '',
-            photos: ''
+            photos: Immutable.List([])
         }),
         Immutable.Map({
             name: 'Spirit',
             manifest: '',
-            photos: ''
+            photos: Immutable.List([])
         })
     ])
 });
@@ -37,8 +37,7 @@ const App = (state) => {
 
     let rovers = state.get('rovers');
     let currentRover = state.get('currentRover');
-    let index = rovers.findIndex(r => r.get('name') === currentRover);
-    let rover = rovers.get(index);
+    let rover = getRover(currentRover);
 
     return `
     <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
@@ -101,11 +100,11 @@ const initNav = () => {
 // ------------------------------------------------------  COMPONENTS
 
 
-const RoverNavigation = (itemsCallback, rovers) => {
+const RoverNavigation = (NavItems, rovers) => {
     return `
     <div class="navbar-menu" id="roverNavigation">
         <div class="navbar-start">
-            ${itemsCallback(rovers)}
+            ${NavItems(rovers)}
         </div>
     </div>
     `;
@@ -156,17 +155,17 @@ const RoverInformation = (rover) => {
     `;
 };
 
-const RoverGallery = (itemsCallback, rover) => {
+const RoverGallery = (GalleryItems, rover) => {
     const photos = rover.get('photos');
     const manifest = rover.get('manifest');
 
-    if (!photos) {
+    if (photos.isEmpty()) {
         getPhotos(rover, manifest.max_sol);
     }
 
     return `
-    <div class="columns is-multiline" id="gallery">
-        ${itemsCallback(photos)}
+    <div class="columns is-multiline">
+        ${GalleryItems(photos)}
     </div>
     `;
 };
@@ -190,28 +189,42 @@ const Footer = () => {
         </div>`;
 }
 
-// Utilities
-
-const getIndexbyName = (array, name) => {
-    // TODO error handling for name not found (index = -1)
-    return array.findIndex(a => a.name === name);
-}
-
 // Store Management
 
-const updateRover = (rover, key, data) => {
+// Retrieves rovers from store and updates the data of a specific rover. Finally, renders output anew
+const updateRoverData = (rover, key, data) => {
     const rovers = store.get('rovers');
     const index = rovers.findIndex(r => r.get('name') === rover.get('name'));
     const updatedRover = rovers.setIn([index, key], data);
     store = store.set('rovers', updatedRover);
     console.log(store.toJS());
-    render(root, store);
 }
 
+const appendRoverData = (rover, key, data) => {
+    const rovers = store.get('rovers');
+    const index = rovers.findIndex(r => r.get('name') === rover.get('name'));
+
+    // merge original and new array
+    const original = rovers.get(index).get(key);
+    const merged = original.merge(data);
+    // console.dir(mergedPhotos.toJS());
+
+    const updatedRover = rovers.setIn([index, key], merged);
+    store = store.set('rovers', updatedRover);
+    console.log(store.toJS());
+}
+
+// Sets the current rover. Finally, renders output anew
 const updateCurrentRover = (roverName) => {
     store = store.set('currentRover', roverName);
     console.log('Current Rover: ', roverName);
     render(root, store);
+}
+
+const getRover = (name) => {
+    let rovers = store.get('rovers');
+    let index = rovers.findIndex(r => r.get('name') === name);
+    return rovers.get(index);
 }
 
 // ------------------------------------------------------  API CALLS
@@ -223,7 +236,8 @@ const getManifest = (rover) => {
         .then(manifest => {
             console.log(`Got manifest for ${rover.get('name')}`);
             // update store with new manifest
-            updateRover(rover, 'manifest', manifest);
+            updateRoverData(rover, 'manifest', manifest);
+            render(root, store);
         });
 
     return data;
@@ -233,9 +247,18 @@ const getPhotos = (rover, sol) => {
     fetch(`http://localhost:3000/photos/${rover.get('name')}/${sol}`)
         .then(res => res.json())
         .then(photos => {
-            console.log(`Got photos for ${rover.get('name')}`);
+            console.log(`Got photos for ${rover.get('name')} and sol ${sol}: ${photos.length}`);
             // update store with new photos
-            updateRover(rover, 'photos', photos);
+            
+            appendRoverData(getRover(rover.get('name')), 'photos', photos);
+            console.log('List length: ' + getRover(rover.get('name')).get('photos').toJS().length);
+
+            if (getRover(rover.get('name')).get('photos').toJS().length < store.get('gallery').get('min_photos')) {
+                // recursively get more photos until min_photos is reached
+                getPhotos(getRover(rover.get('name')), sol - 1);
+            }
+
+            render(root, store);
         });
 
     return data;
