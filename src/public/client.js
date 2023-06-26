@@ -74,6 +74,8 @@ const App = (state) => {
     <footer class="footer">
             ${Footer()}
     </footer>
+
+    ${Modal()}
     `;
 };
 
@@ -97,6 +99,15 @@ const initNav = () => {
     });
 }
 
+// Functions to open and close a modal
+const showLoadingModal = (element) => {
+    element.classList.add('is-active');
+}
+
+const hideLoadingModal = (element) => {
+    element.classList.remove('is-active');
+}
+
 // ------------------------------------------------------  COMPONENTS
 
 
@@ -117,6 +128,23 @@ const NavItems = (rovers) => {
         </a>`
     });
     return navItems.join('');
+}
+
+const Loading = () => {
+    return `
+    <div class="box">
+            <h1 class="title is-4">Loading...</h1>
+            <progress class="progress is-small is-primary" max="100">0%</progress>
+    </div>`
+}
+
+const Modal = () => {
+    return `<div class="modal" id="modal">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+        ${Loading()}
+    </div>
+    </div>`
 }
 
 const RoverInformation = (rover) => {
@@ -215,9 +243,15 @@ const appendRoverData = (rover, key, data) => {
 
 // Sets the current rover
 const updateCurrentRover = (roverName) => {
+    const originalRover = store.get('currentRover');
     store = store.set('currentRover', roverName);
     console.log('Current Rover: ', roverName);
-    render(root, store);
+    // render only if the selected new rover is not the current rover
+    if (originalRover !== roverName) {
+        showLoadingModal(document.getElementById('modal'));
+        // render() renders the new state and hides the modal again
+        render(root, store);
+    }
 }
 
 // gets a specific rover from the store
