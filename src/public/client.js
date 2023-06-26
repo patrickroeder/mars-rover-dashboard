@@ -4,7 +4,7 @@ let store = Immutable.Map({
     gallery: Immutable.Map({
         min_photos: 9
     }),
-    currentRover: 'Curiosity',
+    currentRover: 'Opportunity',
     rovers: Immutable.List([
         Immutable.Map({
             name: 'Opportunity',
@@ -191,15 +191,15 @@ const Footer = () => {
 
 // Store Management
 
-// Retrieves rovers from store and updates the data of a specific rover. Finally, renders output anew
+// Retrieves rovers from store and updates the data of a specific rover
 const updateRoverData = (rover, key, data) => {
     const rovers = store.get('rovers');
     const index = rovers.findIndex(r => r.get('name') === rover.get('name'));
     const updatedRover = rovers.setIn([index, key], data);
     store = store.set('rovers', updatedRover);
-    console.log(store.toJS());
 }
 
+// Retrieves rovers from store and appends (merges) the data with existing data for a specific rover
 const appendRoverData = (rover, key, data) => {
     const rovers = store.get('rovers');
     const index = rovers.findIndex(r => r.get('name') === rover.get('name'));
@@ -211,16 +211,16 @@ const appendRoverData = (rover, key, data) => {
 
     const updatedRover = rovers.setIn([index, key], merged);
     store = store.set('rovers', updatedRover);
-    console.log(store.toJS());
 }
 
-// Sets the current rover. Finally, renders output anew
+// Sets the current rover
 const updateCurrentRover = (roverName) => {
     store = store.set('currentRover', roverName);
     console.log('Current Rover: ', roverName);
     render(root, store);
 }
 
+// gets a specific rover from the store
 const getRover = (name) => {
     let rovers = store.get('rovers');
     let index = rovers.findIndex(r => r.get('name') === name);
@@ -229,6 +229,7 @@ const getRover = (name) => {
 
 // ------------------------------------------------------  API CALLS
 
+// gets the manifest for a specific rover
 const getManifest = (rover) => {
 
     fetch(`http://localhost:3000/manifest/${rover.get('name')}`)
@@ -243,19 +244,25 @@ const getManifest = (rover) => {
     return data;
 };
 
+// gets photos for a specific rover with an initial sol set. if there are too few photos, recursively gets more photos unitl a certain minimum count (min_photos) is reached
 const getPhotos = (rover, sol) => {
     fetch(`http://localhost:3000/photos/${rover.get('name')}/${sol}`)
         .then(res => res.json())
         .then(photos => {
             console.log(`Got photos for ${rover.get('name')} and sol ${sol}: ${photos.length}`);
-            // update store with new photos
-            
-            appendRoverData(getRover(rover.get('name')), 'photos', photos);
-            console.log('List length: ' + getRover(rover.get('name')).get('photos').toJS().length);
 
-            if (getRover(rover.get('name')).get('photos').toJS().length < store.get('gallery').get('min_photos')) {
+            // append store with photos
+            appendRoverData(getRover(rover.get('name')), 'photos', photos);
+            // console.log('List length: ' + getRover(rover.get('name')).get('photos').toJS().length);
+
+            // update length variable for current recursive iteration
+            let currentLength = getRover(rover.get('name')).get('photos').toJS().length;
+            // update rover for current recursive iteration
+            let currentRover = getRover(rover.get('name'));
+
+            if (currentLength < store.get('gallery').get('min_photos')) {
                 // recursively get more photos until min_photos is reached
-                getPhotos(getRover(rover.get('name')), sol - 1);
+                getPhotos(currentRover, sol - 1);
             }
 
             render(root, store);
