@@ -29,6 +29,7 @@ const root = document.getElementById('root');
 
 const render = async (root, state) => {
     root.innerHTML = App(state);
+    // add event listeners to navigation items
     initNav();
 };
 
@@ -73,11 +74,14 @@ const App = (state) => {
     `;
 };
 
+// event handling
+
 // listening for load event because page should load before any JS is called
 window.addEventListener('load', () => {
     render(root, store);
 });
 
+// add event listeners to navigation items
 const initNav = () => {
     // Get the parent div element
     const parentDiv = document.getElementById('roverNavigation');
@@ -93,7 +97,7 @@ const initNav = () => {
     });
 }
 
-// Functions to open and close a modal
+// functions to open and close the modal showing a loading screen
 const showLoadingModal = (element) => {
     element.classList.add('is-active');
 }
